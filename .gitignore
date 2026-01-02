@@ -1,0 +1,42 @@
+# Build artifacts
+bin/
+obj/
+publish/
+build-output/
+*.exe
+*.dll
+*.pdb
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio
+.vs/
+.vscode/
+
+# Rider
+.idea/
+
+# SDK downloads (user will download these themselves)
+*.zip
+*.tar.gz
+
+# Temporary files
+*.tmp
+*.temp
+Temp/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Configuration
+config.json
+.alternative-build/
+.alternative-sdk/
+
+# Logs
+*.log
