@@ -39,7 +39,47 @@ public class SdkManager
 
             await SdkDownloader.DownloadAndExtractAsync(url, targetDir, $"Android SDK {version}");
 
+            // Set ANDROID_HOME for sdkmanager
+            var sdkHome = AndroidSdkPath;
+            Environment.SetEnvironmentVariable("ANDROID_HOME", sdkHome);
+
+            // Install build-tools using sdkmanager
+            Console.WriteLine();
+            ConsoleLogger.Info("Installing build-tools (required for building)...");
+
+            var sdkManagerPath = FindSdkManager(targetDir);
+            if (!string.IsNullOrEmpty(sdkManagerPath))
+            {
+                try
+                {
+                    // Install latest build-tools
+                    var result = await ProcessRunner.RunAsync(
+                        sdkManagerPath,
+                        "\"build-tools;34.0.0\"",
+                        Directory.GetCurrentDirectory(),
+                        null,
+                        line => Console.WriteLine($"  {line}"),
+                        line => ConsoleLogger.Warning(line)
+                    );
+
+                    if (result.Success)
+                    {
+                        ConsoleLogger.Success("Build-tools installed successfully");
+                    }
+                    else
+                    {
+                        ConsoleLogger.Warning("Build-tools installation skipped (can be installed later)");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ConsoleLogger.Warning($"Build-tools installation failed: {ex.Message}");
+                    ConsoleLogger.Info("You can install manually later with: sdkmanager \"build-tools;34.0.0\"");
+                }
+            }
+
             // Set ANDROID_HOME environment variable recommendation
+            Console.WriteLine();
             ConsoleLogger.Info($"Add to environment: ANDROID_HOME={AndroidSdkPath}");
 
             return true;
@@ -60,8 +100,11 @@ public class SdkManager
         {
             ConsoleLogger.Header($"Installing Android NDK {version}");
 
-            // NDK download URL
-            var url = $"https://dl.google.com/android/repository/android-ndk-r{version}-windows.zip";
+            // Extract NDK release tag (e.g., "27" from "27.0.12077973")
+            var releaseTag = version.Split('.')[0];
+
+            // NDK download URL (uses release tag, not full version)
+            var url = $"https://dl.google.com/android/repository/android-ndk-r{releaseTag}-windows.zip";
             var targetDir = Path.Combine(NdkPath, version);
 
             if (Directory.Exists(targetDir))
@@ -70,7 +113,7 @@ public class SdkManager
                 return true;
             }
 
-            await SdkDownloader.DownloadAndExtractAsync(url, targetDir, $"NDK {version}");
+            await SdkDownloader.DownloadAndExtractAsync(url, targetDir, $"NDK r{releaseTag}");
 
             return true;
         }
@@ -171,5 +214,29 @@ public class SdkManager
 
         var sdkPath = Path.Combine(basePath, version);
         return Directory.Exists(sdkPath) ? sdkPath : null;
+    }
+
+    /// <summary>
+    /// Find sdkmanager executable in SDK installation
+    /// </summary>
+    private string? FindSdkManager(string sdkPath)
+    {
+        // Try to find sdkmanager in cmdline-tools
+        var sdkManagerBat = Path.Combine(sdkPath, "cmdline-tools", "bin", "sdkmanager.bat");
+        if (File.Exists(sdkManagerBat))
+        {
+            PlatformHelper.MakeExecutable(sdkManagerBat);
+            return sdkManagerBat;
+        }
+
+        // Try alternate location (latest folder)
+        var latestPath = Path.Combine(sdkPath, "latest", "bin", "sdkmanager.bat");
+        if (File.Exists(latestPath))
+        {
+            PlatformHelper.MakeExecutable(latestPath);
+            return latestPath;
+        }
+
+        return null;
     }
 }

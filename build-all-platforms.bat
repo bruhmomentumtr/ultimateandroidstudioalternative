@@ -6,8 +6,8 @@ echo.
 
 cd /d AlternativeBuild
 
-echo Cleaning previous builds...
-dotnet clean -c Release
+echo Restoring dependencies...
+dotnet restore
 if errorlevel 1 goto error
 
 echo.
