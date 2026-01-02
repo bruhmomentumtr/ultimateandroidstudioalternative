@@ -1,23 +1,37 @@
-# Placeholder for ADB binaries
+# ADB Tools (Embedded)
 
-## How to Add ADB
+Bu klasör ADB (Android Debug Bridge) araçlarını içerir.
 
-1. Download Android Platform Tools from:
-   https://developer.android.com/studio/releases/platform-tools
+## 📦 İçerik
 
-2. Extract the following files from the `platform-tools` folder:
-   - adb.exe
-   - AdbWinApi.dll
-   - AdbWinUsbApi.dll
+- `adb.exe` - Android Debug Bridge binary
+- `AdbWinApi.dll` - Windows API wrapper
+- `AdbWinUsbApi.dll` - USB API wrapper
 
-3. Place them in this directory: `EmbeddedResources/tools/adb/`
+## 🔧 Kullanım
 
-4. Rebuild the project to embed them in the executable
+Bu dosyalar executable içine gömülüdür (embedded resource) ve ilk çalıştırmada otomatik olarak:
+```
+%TEMP%\alternative-build-tools\adb\
+```
+konumuna çıkartılır.
 
-## Note
+## 📥 Kurulum
 
-ADB binaries cannot be included in the repository due to licensing.
-Users must download them from the official Android website.
+Eğer dosyalar eksikse, `copy-tools-from-sdk.bat` scriptini çalıştırın:
 
-Alternatively, you can set the build action of these files to "Embedded Resource"
-in the .csproj file after adding them.
+```bash
+cd ..\..\..
+.\copy-tools-from-sdk.bat
+```
+
+Bu script Android SDK'dan gerekli dosyaları otomatik kopyalar.
+
+## 📌 Kaynak
+
+Android Platform Tools:
+https://developer.android.com/studio/releases/platform-tools
+
+## ⚖️ Lisans
+
+Apache License 2.0 (Android Open Source Project)

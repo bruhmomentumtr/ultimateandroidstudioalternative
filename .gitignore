@@ -7,6 +7,13 @@ build-output/
 *.dll
 *.pdb
 
+# Embedded resources (large binaries - regenerate with copy-tools-from-sdk.bat)
+AlternativeBuild/EmbeddedResources/tools/adb/*.exe
+AlternativeBuild/EmbeddedResources/tools/adb/*.dll
+AlternativeBuild/EmbeddedResources/tools/build-tools/*.exe
+AlternativeBuild/EmbeddedResources/tools/build-tools/*.jar
+AlternativeBuild/EmbeddedResources/tools/build-tools/*.bat
+
 # User-specific files
 *.user
 *.suo

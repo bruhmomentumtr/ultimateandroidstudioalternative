@@ -76,26 +76,6 @@ alternative.exe -kotlin build  # SDKs will be downloaded automatically!
 
 ---
 
-## 📚 Detailed Documentation
-
-Comprehensive guides for each feature:
-
-### 🎯 Usage Guides
-- 📖 **[🚀 AVD Quick Start](docs/en/avd-quickstart.md)** - Zero to emulator in 3 steps!
-- 📖 **[AVD & Emulator Setup](docs/en/avd-setup.md)** - Detailed AVD setup guide
-- 📖 **[SDK Management](docs/en/sdk-management.md)** - SDK/NDK/Flutter SDK installation
-- 📖 **[Build Configuration](docs/en/build-config.md)** - Build settings, signing, optimization
-- 📖 **[Embedding Tools](docs/en/embedding-tools.md)** - Embed ADB and build tools
-- 📖 **[Cross-Platform Usage](docs/en/cross-platform.md)** - Linux, macOS, Docker, CI/CD
-- 📖 **[Termux Usage](docs/en/termux-usage.md)** - Develop on Android devices
-
-### 🌍 Language Options
-- 🇹🇷 **[Turkish README](README.md)**
-- 🇬🇧 **[English README](README_EN.md)** (This file)
-- 📂 **[Turkish Guides](docs/tr/)** | **[English Guides](docs/en/)**
-
----
-
 ## 📖 Usage Guide
 
 ### Auto SDK/NDK Detection

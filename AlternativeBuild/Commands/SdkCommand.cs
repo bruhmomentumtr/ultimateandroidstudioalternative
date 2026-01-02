@@ -18,21 +18,67 @@ public class SdkCommand : ICommand
             return 0;
         }
 
-        if (args[0] == "install")
+        switch (args[0])
         {
-            if (args.Length < 2)
-            {
-                ConsoleLogger.Error("Missing version. Usage: -sdk install <version>");
-                return 1;
-            }
+            case "install":
+                if (args.Length < 2)
+                {
+                    ConsoleLogger.Error("Missing version. Usage: -sdk install <version>");
+                    return 1;
+                }
+                var success = await _sdkManager.InstallAndroidSdkAsync(args[1]);
+                return success ? 0 : 1;
 
-            var success = await _sdkManager.InstallAndroidSdkAsync(args[1]);
-            return success ? 0 : 1;
+            case "browse":
+                return await BrowseVersionsAsync();
+
+            default:
+                ConsoleLogger.Error($"Unknown SDK action: {args[0]}");
+                ShowHelp();
+                return 1;
+        }
+    }
+
+    private async Task<int> BrowseVersionsAsync()
+    {
+        ConsoleLogger.Header("ANDROID SDK VERSIONS");
+        Console.WriteLine();
+
+        var versions = VersionCatalog.AndroidSdkVersions;
+
+        for (int i = 0; i < versions.Count && i < 10; i++)
+        {
+            var version = versions[i];
+            var prefix = version.IsRecommended ? "★" : " ";
+            var color = version.IsRecommended ? ConsoleColor.Green : ConsoleColor.White;
+
+            Console.ForegroundColor = color;
+            Console.WriteLine($"{prefix} {i + 1}. SDK {version.Version} - {version.Description}");
+            Console.ResetColor();
         }
 
-        ConsoleLogger.Error($"Unknown SDK action: {args[0]}");
-        ShowHelp();
-        return 1;
+        Console.WriteLine();
+        Console.Write($"Select version (1-{Math.Min(versions.Count, 10)}, or 0 to cancel): ");
+
+        var input = Console.ReadLine();
+        if (!int.TryParse(input, out int selection) || selection < 0 || selection > Math.Min(versions.Count, 10))
+        {
+            ConsoleLogger.Error("Invalid selection");
+            return 1;
+        }
+
+        if (selection == 0)
+        {
+            ConsoleLogger.Info("Cancelled");
+            return 0;
+        }
+
+        var selectedVersion = versions[selection - 1];
+        Console.WriteLine();
+        ConsoleLogger.Info($"Installing Android SDK {selectedVersion.Version}...");
+
+        var success = await _sdkManager.InstallAndroidSdkAsync(selectedVersion.Version);
+        return success ? 0 : 1;
     }
 
     public void ShowHelp()
@@ -42,13 +88,11 @@ public class SdkCommand : ICommand
         Console.WriteLine("USAGE:");
         Console.WriteLine("  alternative.exe -sdk list                 List installed Android SDKs");
         Console.WriteLine("  alternative.exe -sdk install <version>    Install Android SDK");
+        Console.WriteLine("  alternative.exe -sdk browse               Browse and select SDK version");
         Console.WriteLine();
         Console.WriteLine("EXAMPLES:");
         Console.WriteLine("  alternative.exe -sdk list");
-        Console.WriteLine("  alternative.exe -sdk install 10406996");
-        Console.WriteLine("  alternative.exe -sdk install android-34");
-        Console.WriteLine();
-        Console.WriteLine("For available versions, visit:");
-        Console.WriteLine("  https://developer.android.com/studio#command-tools");
+        Console.WriteLine("  alternative.exe -sdk install 11076708");
+        Console.WriteLine("  alternative.exe -sdk browse");
     }
 }

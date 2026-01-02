@@ -18,21 +18,67 @@ public class NdkCommand : ICommand
             return 0;
         }
 
-        if (args[0] == "install")
+        switch (args[0])
         {
-            if (args.Length < 2)
-            {
-                ConsoleLogger.Error("Missing version. Usage: -ndk install <version>");
-                return 1;
-            }
+            case "install":
+                if (args.Length < 2)
+                {
+                    ConsoleLogger.Error("Missing version. Usage: -ndk install <version>");
+                    return 1;
+                }
+                var success = await _sdkManager.InstallNdkAsync(args[1]);
+                return success ? 0 : 1;
 
-            var success = await _sdkManager.InstallNdkAsync(args[1]);
-            return success ? 0 : 1;
+            case "browse":
+                return await BrowseVersionsAsync();
+
+            default:
+                ConsoleLogger.Error($"Unknown NDK action: {args[0]}");
+                ShowHelp();
+                return 1;
+        }
+    }
+
+    private async Task<int> BrowseVersionsAsync()
+    {
+        ConsoleLogger.Header("ANDROID NDK VERSIONS");
+        Console.WriteLine();
+
+        var versions = VersionCatalog.NdkVersions;
+
+        for (int i = 0; i < versions.Count && i < 10; i++)
+        {
+            var version = versions[i];
+            var prefix = version.IsRecommended ? "★" : " ";
+            var color = version.IsRecommended ? ConsoleColor.Green : ConsoleColor.White;
+
+            Console.ForegroundColor = color;
+            Console.WriteLine($"{prefix} {i + 1}. NDK {version.Version} - {version.Description}");
+            Console.ResetColor();
         }
 
-        ConsoleLogger.Error($"Unknown NDK action: {args[0]}");
-        ShowHelp();
-        return 1;
+        Console.WriteLine();
+        Console.Write($"Select version (1-{Math.Min(versions.Count, 10)}, or 0 to cancel): ");
+
+        var input = Console.ReadLine();
+        if (!int.TryParse(input, out int selection) || selection < 0 || selection > Math.Min(versions.Count, 10))
+        {
+            ConsoleLogger.Error("Invalid selection");
+            return 1;
+        }
+
+        if (selection == 0)
+        {
+            ConsoleLogger.Info("Cancelled");
+            return 0;
+        }
+
+        var selectedVersion = versions[selection - 1];
+        Console.WriteLine();
+        ConsoleLogger.Info($"Installing Android NDK {selectedVersion.Version}...");
+
+        var success = await _sdkManager.InstallNdkAsync(selectedVersion.Version);
+        return success ? 0 : 1;
     }
 
     public void ShowHelp()
@@ -42,13 +88,11 @@ public class NdkCommand : ICommand
         Console.WriteLine("USAGE:");
         Console.WriteLine("  alternative.exe -ndk list                 List installed NDKs");
         Console.WriteLine("  alternative.exe -ndk install <version>    Install Android NDK");
+        Console.WriteLine("  alternative.exe -ndk browse               Browse and select NDK version");
         Console.WriteLine();
         Console.WriteLine("EXAMPLES:");
         Console.WriteLine("  alternative.exe -ndk list");
         Console.WriteLine("  alternative.exe -ndk install 26.1.10909125");
-        Console.WriteLine("  alternative.exe -ndk install 25c");
-        Console.WriteLine();
-        Console.WriteLine("For available versions, visit:");
-        Console.WriteLine("  https://developer.android.com/ndk/downloads");
+        Console.WriteLine("  alternative.exe -ndk browse");
     }
 }

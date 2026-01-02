@@ -70,6 +70,8 @@ class Program
         Commands.Add("adb", new AdbCommand());
         Commands.Add("apksigner", new ApkSignerCommand());
         Commands.Add("avd", new AvdCommand());
+        Commands.Add("system-image", new SystemImageCommand());
+        Commands.Add("emulator", new EmulatorCommand());
     }
 
     private static void ShowBanner()
@@ -103,6 +105,11 @@ class Program
         Console.WriteLine("ANDROID TOOLS (Embedded):");
         Console.WriteLine("  -adb <command>          Android Debug Bridge - device management");
         Console.WriteLine("  -apksigner <command>    Sign and verify APK files");
+        Console.WriteLine();
+        Console.WriteLine("AVD / EMULATOR:");
+        Console.WriteLine("  -avd <action>           Manage Android Virtual Devices");
+        Console.WriteLine("  -system-image <action>  Manage System Images for AVD");
+        Console.WriteLine("  -emulator <action>      Manage Emulator Binary");
         Console.WriteLine();
         Console.WriteLine("CONFIGURATION:");
         Console.WriteLine("  -config <key> [value]   Configure tool settings");

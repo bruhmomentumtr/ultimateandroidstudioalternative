@@ -46,6 +46,9 @@ public class AvdCommand : ICommand
                 }
                 return await DeleteAvd(args[1]);
 
+            case "setup":
+                return await SetupAvdAutomaticAsync(args);
+
             default:
                 ConsoleLogger.Error($"Unknown action: {args[0]}");
                 ShowHelp();
@@ -63,6 +66,7 @@ public class AvdCommand : ICommand
         Console.WriteLine("  alternative -avd start <name>              Start AVD");
         Console.WriteLine("  alternative -avd stop                      Stop running emulator");
         Console.WriteLine("  alternative -avd delete <name>             Delete AVD");
+        Console.WriteLine("  alternative -avd setup --api <api> --name <name>  Auto-setup complete AVD");
         Console.WriteLine();
         Console.WriteLine("EXAMPLES:");
         Console.WriteLine("  alternative -avd list");
@@ -70,9 +74,10 @@ public class AvdCommand : ICommand
         Console.WriteLine("  alternative -avd start Pixel_5");
         Console.WriteLine("  alternative -avd stop");
         Console.WriteLine("  alternative -avd delete Pixel_5");
+        Console.WriteLine("  alternative -avd setup --api 34 --name Pixel_5");
         Console.WriteLine();
         Console.WriteLine("NOTE:");
-        Console.WriteLine("  Requires Android SDK and emulator to be installed.");
+        Console.WriteLine("  'setup' automatically installs system image and emulator if needed.");
         Console.WriteLine("  Use: alternative -sdk install <version>");
     }
 
@@ -326,5 +331,125 @@ public class AvdCommand : ICommand
             System.Runtime.InteropServices.Architecture.Arm64 => "arm64-v8a",
             _ => "x86_64"
         };
+    }
+
+    private async Task<int> SetupAvdAutomaticAsync(string[] args)
+    {
+        ConsoleLogger.Header("✨ AVD AUTO-SETUP");
+        Console.WriteLine();
+
+        // Parse arguments
+        string? apiLevel = null;
+        string? name = null;
+
+        for (int i = 1; i < args.Length; i++)
+        {
+            if (args[i] == "--api" && i + 1 < args.Length)
+            {
+                apiLevel = args[i + 1];
+                i++;
+            }
+            else if (args[i] == "--name" && i + 1 < args.Length)
+            {
+                name = args[i + 1];
+                i++;
+            }
+        }
+
+        if (string.IsNullOrEmpty(apiLevel) || string.IsNullOrEmpty(name))
+        {
+            ConsoleLogger.Error("Missing required arguments");
+            ConsoleLogger.Info("Usage: alternative -avd setup --api <api-level> --name <avd-name>");
+            ConsoleLogger.Info("Example: alternative -avd setup --api 34 --name Pixel_5");
+            return 1;
+        }
+
+        ConsoleLogger.Info($"Setting up AVD: {name} with API {apiLevel}");
+        ConsoleLogger.Info("This will automatically install missing components...");
+        Console.WriteLine();
+
+        // 1. Check system image
+        ConsoleLogger.Header("Step 1: Checking System Image...");
+        if (!HasSystemImage(apiLevel))
+        {
+            ConsoleLogger.Warning($"System image for API {apiLevel} not found");
+            ConsoleLogger.Info("Installing system image (this may take 10-20 minutes)...");
+
+            var systemImageCmd = new SystemImageCommand();
+            var result = await systemImageCmd.ExecuteAsync(new[] { "install", apiLevel });
+
+            if (result != 0)
+            {
+                ConsoleLogger.Error("Failed to install system image");
+                return result;
+            }
+        }
+        else
+        {
+            ConsoleLogger.Success("✓ System image already installed");
+        }
+        Console.WriteLine();
+
+        // 2. Check emulator
+        ConsoleLogger.Header("Step 2: Checking Emulator...");
+        if (!HasEmulator())
+        {
+            ConsoleLogger.Warning("Emulator not found");
+            ConsoleLogger.Info("Installing emulator (this may take 5-10 minutes)...");
+
+            var emulatorCmd = new EmulatorCommand();
+            var result = await emulatorCmd.ExecuteAsync(new[] { "install" });
+
+            if (result != 0)
+            {
+                ConsoleLogger.Error("Failed to install emulator");
+                return result;
+            }
+        }
+        else
+        {
+            ConsoleLogger.Success("✓ Emulator already installed");
+        }
+        Console.WriteLine();
+
+        // 3. Create AVD
+        ConsoleLogger.Header("Step 3: Creating AVD...");
+        var createResult = await CreateAvd(name, apiLevel);
+        if (createResult != 0)
+        {
+            ConsoleLogger.Error("Failed to create AVD");
+            return createResult;
+        }
+        Console.WriteLine();
+
+        // 4. Ask if user wants to start it
+        ConsoleLogger.Success("✨ AVD setup complete!");
+        Console.WriteLine();
+        Console.Write("Start emulator now? (Y/n): ");
+        var response = Console.ReadLine()?.ToLower();
+
+        if (string.IsNullOrEmpty(response) || response == "y" || response == "yes")
+        {
+            Console.WriteLine();
+            return await StartAvd(name);
+        }
+
+        ConsoleLogger.Info($"You can start it later with: alternative -avd start {name}");
+        return 0;
+    }
+
+    private bool HasSystemImage(string apiLevel)
+    {
+        var androidHome = Environment.GetEnvironmentVariable("ANDROID_HOME");
+        if (string.IsNullOrEmpty(androidHome))
+            return false;
+
+        var systemImagePath = Path.Combine(androidHome, "system-images", $"android-{apiLevel}", "google_apis", GetArchitecture());
+        return Directory.Exists(systemImagePath);
+    }
+
+    private bool HasEmulator()
+    {
+        return !string.IsNullOrEmpty(FindEmulator());
     }
 }

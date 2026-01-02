@@ -18,21 +18,67 @@ public class FlutterSdkCommand : ICommand
             return 0;
         }
 
-        if (args[0] == "install")
+        switch (args[0])
         {
-            if (args.Length < 2)
-            {
-                ConsoleLogger.Error("Missing version. Usage: --flutter-sdk install <version>");
-                return 1;
-            }
+            case "install":
+                if (args.Length < 2)
+                {
+                    ConsoleLogger.Error("Missing version. Usage: --flutter-sdk install <version>");
+                    return 1;
+                }
+                var success = await _sdkManager.InstallFlutterSdkAsync(args[1]);
+                return success ? 0 : 1;
 
-            var success = await _sdkManager.InstallFlutterSdkAsync(args[1]);
-            return success ? 0 : 1;
+            case "browse":
+                return await BrowseVersionsAsync();
+
+            default:
+                ConsoleLogger.Error($"Unknown Flutter SDK action: {args[0]}");
+                ShowHelp();
+                return 1;
+        }
+    }
+
+    private async Task<int> BrowseVersionsAsync()
+    {
+        ConsoleLogger.Header("FLUTTER SDK VERSIONS");
+        Console.WriteLine();
+
+        var versions = VersionCatalog.FlutterVersions;
+
+        for (int i = 0; i < versions.Count && i < 10; i++)
+        {
+            var version = versions[i];
+            var prefix = version.IsRecommended ? "★" : " ";
+            var color = version.IsRecommended ? ConsoleColor.Green : ConsoleColor.White;
+
+            Console.ForegroundColor = color;
+            Console.WriteLine($"{prefix} {i + 1}. Flutter {version.Version} - {version.Description}");
+            Console.ResetColor();
         }
 
-        ConsoleLogger.Error($"Unknown Flutter SDK action: {args[0]}");
-        ShowHelp();
-        return 1;
+        Console.WriteLine();
+        Console.Write($"Select version (1-{Math.Min(versions.Count, 10)}, or 0 to cancel): ");
+
+        var input = Console.ReadLine();
+        if (!int.TryParse(input, out int selection) || selection < 0 || selection > Math.Min(versions.Count, 10))
+        {
+            ConsoleLogger.Error("Invalid selection");
+            return 1;
+        }
+
+        if (selection == 0)
+        {
+            ConsoleLogger.Info("Cancelled");
+            return 0;
+        }
+
+        var selectedVersion = versions[selection - 1];
+        Console.WriteLine();
+        ConsoleLogger.Info($"Installing Flutter SDK {selectedVersion.Version}...");
+
+        var success = await _sdkManager.InstallFlutterSdkAsync(selectedVersion.Version);
+        return success ? 0 : 1;
     }
 
     public void ShowHelp()
@@ -42,13 +88,11 @@ public class FlutterSdkCommand : ICommand
         Console.WriteLine("USAGE:");
         Console.WriteLine("  alternative.exe --flutter-sdk list                List installed Flutter SDKs");
         Console.WriteLine("  alternative.exe --flutter-sdk install <version>   Install Flutter SDK");
+        Console.WriteLine("  alternative.exe --flutter-sdk browse              Browse and select Flutter version");
         Console.WriteLine();
         Console.WriteLine("EXAMPLES:");
         Console.WriteLine("  alternative.exe --flutter-sdk list");
         Console.WriteLine("  alternative.exe --flutter-sdk install 3.19.0");
-        Console.WriteLine("  alternative.exe --flutter-sdk install 3.16.5");
-        Console.WriteLine();
-        Console.WriteLine("For available versions, visit:");
-        Console.WriteLine("  https://flutter.dev/docs/development/tools/sdk/releases");
+        Console.WriteLine("  alternative.exe --flutter-sdk browse");
     }
 }
