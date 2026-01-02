@@ -7,6 +7,8 @@
 [![Platform](https://img.shields.io/badge/platform-Windows-blue)](https://www.microsoft.com/windows)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
+**Languages:** [Türkçe](README.md) | [English](README_EN.md)
+
 ---
 
 ## 📑 İçindekiler
